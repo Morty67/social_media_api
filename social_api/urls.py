@@ -19,11 +19,12 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
-# urlpatterns = [
-#     path("admin/", admin.site.urls),
-# ]
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include("social_media_api.urls", namespace="social_media_api")),
-    path("api/user/", include("user.urls", namespace="user")),
+    path(
+        "api/",
+        include("social_media_api.urls", namespace="social_media_api"),
+    ),
+    path("user/", include("user.urls", namespace="user")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
