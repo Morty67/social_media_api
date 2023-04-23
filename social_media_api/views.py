@@ -1,10 +1,13 @@
-from rest_framework import viewsets, generics
+from rest_framework import viewsets, generics, permissions
+from rest_framework.response import Response
+
 from .models import (
     Post,
     Like,
     Follow,
     Comment,
 )
+from .permissions import IsAuthorOrReadOnly
 
 from .serializers import (
     PostSerializer,
@@ -18,7 +21,10 @@ from .serializers import (
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    # permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        IsAuthorOrReadOnly,
+    )
 
     @staticmethod
     def _params_to_ints(qs):
@@ -36,8 +42,25 @@ class PostViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        media = self.request.data.get("media")
-        serializer.save(user=self.request.user, media=media)
+        user = self.request.user
+        serializer.save(user=user)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.user == request.user:
+            serializer = self.get_serializer(
+                instance,
+                data=request.data,
+                partial=True,
+            )
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        else:
+            return Response(
+                {"error": "You are not authorized to update this post."},
+                status=403,
+            )
 
 
 class LikeViewSet(viewsets.ReadOnlyModelViewSet):
@@ -49,6 +72,10 @@ class LikeViewSet(viewsets.ReadOnlyModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        IsAuthorOrReadOnly,
+    )
     # permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def perform_create(self, serializer):
