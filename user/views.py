@@ -10,7 +10,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from user.serializers import (
     UserSerializer,
     PartialUserSerializer,
-    RefreshTokenSerializer,
+    LogoutSerializer,
 )
 
 User = get_user_model()
@@ -31,13 +31,14 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
 
 class LogoutView(GenericAPIView):
     queryset = User.objects.all()
-    serializer_class = RefreshTokenSerializer
-    permission_classes = (permissions.IsAuthenticated, )
+    serializer_class = LogoutSerializer
+    permission_classes = (IsAuthenticated,)
 
-    def post(self, request, *args):
-        sz = self.get_serializer(data=request.data)
-        sz.is_valid(raise_exception=True)
-        sz.save()
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

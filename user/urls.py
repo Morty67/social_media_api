@@ -9,7 +9,9 @@ from social_media_api.views import (
     FollowUser,
     FollowUserRemove,
     MyPostsView,
-    FollowingPostsView, LikeCreateAPIView, LikeDestroyAPIView,
+    FollowingPostsView,
+    LikeCreateAPIView,
+    LikeDestroyAPIView,
 )
 from .views import (
     CreateUserView,
@@ -28,7 +30,7 @@ urlpatterns = [
     path("login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
     path("token/verify", TokenVerifyView.as_view(), name="token_verify"),
-    path("token/logout", LogoutView.as_view(), name="token_logout"),
+    path("token/logout/", LogoutView.as_view(), name="logout"),
     path("users/", UserListAPIView.as_view(), name="user-list"),
     path("me", ManageUserView.as_view(), name="manage"),
     path("me/update", PartialUserUpdateAPIView.as_view(),
