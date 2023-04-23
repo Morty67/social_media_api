@@ -1,4 +1,6 @@
-from rest_framework import viewsets, generics, permissions
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
 
 from .models import (
@@ -15,7 +17,12 @@ from .serializers import (
     FollowSerializer,
     CommentSerializer,
     FollowAddSerializer,
+    FollowRemoveSerializer,
+    OwnPostSerializer,
+    FollowPostSerializer,
 )
+
+User = get_user_model()
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -95,4 +102,46 @@ class FollowUser(generics.CreateAPIView):
     serializer_class = FollowAddSerializer
 
     def perform_create(self, serializer):
-        serializer.save(follower=self.request.user)
+        follower = self.request.user
+        following_id = self.kwargs["id"]
+        following = User.objects.get(id=following_id)
+        if follower == following:
+            raise ValidationError("You cannot follow yourself.")
+        serializer.save(follower=follower, following=following)
+
+
+class FollowUserRemove(generics.DestroyAPIView):
+    serializer_class = FollowRemoveSerializer
+    lookup_field = "id"
+
+    def get_queryset(self):
+        queryset = Follow.objects.all()
+        return queryset
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MyPostsView(generics.ListAPIView):
+    serializer_class = OwnPostSerializer
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        posts = Post.objects.filter(user_id=user_id)
+        return posts
+
+
+class FollowingPostsView(generics.ListAPIView):
+    serializer_class = FollowPostSerializer
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        following_ids = Follow.objects.filter(
+            follower_id=user_id
+        ).values_list("following_id", flat=True)
+        posts = Post.objects.filter(user_id__in=following_ids)
+        return posts

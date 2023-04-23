@@ -5,6 +5,12 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
+from social_media_api.views import (
+    FollowUser,
+    FollowUserRemove,
+    MyPostsView,
+    FollowingPostsView,
+)
 from .views import (
     CreateUserView,
     ManageUserView,
@@ -29,4 +35,14 @@ urlpatterns = [
          name="me-update"),
     path("me/delete/", UserProfileDeleteView.as_view(),
          name="me-delete"),
+    path("follow/<int:id>/", FollowUser.as_view(), name="follow"),
+    path(
+        "follow/<int:id>/remove/",
+        FollowUserRemove.as_view(),
+        name="unfollow",
+    ),
+    path("my-posts/", MyPostsView.as_view(),
+         name="my-posts"),
+    path("follow-posts/", FollowingPostsView.as_view(),
+         name="posts-follow"),
 ]

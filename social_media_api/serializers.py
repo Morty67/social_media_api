@@ -89,3 +89,46 @@ class FollowAddSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = ("id", "following")
+
+
+class FollowRemoveSerializer(serializers.Serializer):
+    following_id = serializers.IntegerField()
+
+    def validate_following_id(self, value):
+        try:
+            Follow.objects.get(
+                following_id=value,
+                follower=self.context["request"].user,
+            )
+        except Follow.DoesNotExist:
+            raise serializers.ValidationError(
+                "You are not following this user.",
+            )
+        return value
+
+    def delete(self):
+        following_id = self.validated_data["following_id"]
+        follower = self.context["request"].user
+        follow_obj = Follow.objects.filter(
+            following_id=following_id,
+            follower=follower).first()
+        if follow_obj:
+            follow_obj.delete()
+
+
+class OwnPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = "__all__"
+
+
+class FollowPostSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    likes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = "__all__"
+
+    def get_likes(self, obj):
+        return obj.likes.count()
