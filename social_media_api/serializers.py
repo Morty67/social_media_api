@@ -62,6 +62,13 @@ class LikeSerializer(serializers.ModelSerializer):
         fields = ("id", "post", "email")
 
 
+class LikeAddSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ("id", "user", "post")
+        read_only_fields = ("id", "user", "post")
+
+
 class FollowSerializer(serializers.ModelSerializer):
     follower = serializers.SerializerMethodField()
     following = serializers.SerializerMethodField()

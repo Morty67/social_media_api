@@ -20,6 +20,5 @@ app_name = "social_media_api"
 
 urlpatterns = [
     path("", include(router.urls)),
-
 ]
 

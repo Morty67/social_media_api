@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
 
@@ -9,7 +10,7 @@ from .models import (
     Follow,
     Comment,
 )
-from .permissions import IsAuthorOrReadOnly
+from .permissions import IsAuthorOrReadOnly, IsAdminOrIfAuthenticatedReadOnly
 
 from .serializers import (
     PostSerializer,
@@ -19,7 +20,7 @@ from .serializers import (
     FollowAddSerializer,
     FollowRemoveSerializer,
     OwnPostSerializer,
-    FollowPostSerializer,
+    FollowPostSerializer, LikeAddSerializer,
 )
 
 User = get_user_model()
@@ -31,6 +32,7 @@ class PostViewSet(viewsets.ModelViewSet):
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         IsAuthorOrReadOnly,
+        IsAdminOrIfAuthenticatedReadOnly,
     )
 
     @staticmethod
@@ -73,7 +75,7 @@ class PostViewSet(viewsets.ModelViewSet):
 class LikeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
-    # permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -82,8 +84,8 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         IsAuthorOrReadOnly,
+        IsAdminOrIfAuthenticatedReadOnly,
     )
-    # permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -92,7 +94,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class FollowViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
-   # permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def perform_create(self, serializer):
         serializer.save(follower=self.request.user)
@@ -145,3 +147,34 @@ class FollowingPostsView(generics.ListAPIView):
         ).values_list("following_id", flat=True)
         posts = Post.objects.filter(user_id__in=following_ids)
         return posts
+
+
+class LikeCreateAPIView(generics.CreateAPIView):
+    serializer_class = LikeAddSerializer
+
+    def post(self, request, *args, **kwargs):
+        post_id = self.kwargs["pk"]
+        post = get_object_or_404(Post, pk=post_id)
+        like = Like.objects.filter(post=post, user=request.user).first()
+        if like:
+            serializer = self.get_serializer(like)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=request.user, post=post)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class LikeDestroyAPIView(generics.DestroyAPIView):
+    serializer_class = LikeAddSerializer
+
+    def delete(self, request, *args, **kwargs):
+        post_id = self.kwargs["pk"]
+        post = get_object_or_404(Post, pk=post_id)
+        like = Like.objects.filter(post=post, user=request.user).first()
+        if like:
+            self.perform_destroy(like)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)

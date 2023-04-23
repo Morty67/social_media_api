@@ -9,7 +9,7 @@ from social_media_api.views import (
     FollowUser,
     FollowUserRemove,
     MyPostsView,
-    FollowingPostsView,
+    FollowingPostsView, LikeCreateAPIView, LikeDestroyAPIView,
 )
 from .views import (
     CreateUserView,
@@ -41,8 +41,16 @@ urlpatterns = [
         FollowUserRemove.as_view(),
         name="unfollow",
     ),
-    path("my-posts/", MyPostsView.as_view(),
-         name="my-posts"),
-    path("follow-posts/", FollowingPostsView.as_view(),
-         name="posts-follow"),
+    path(
+        "post/<int:pk>/like",
+        LikeCreateAPIView.as_view(),
+        name="post-like",
+    ),
+    path(
+        "post/<int:pk>/dislike",
+        LikeDestroyAPIView.as_view(),
+        name="post-like-delete",
+    ),
+    path("my-posts/", MyPostsView.as_view(), name="my-posts"),
+    path("follow-posts/", FollowingPostsView.as_view(), name="posts-follow"),
 ]
