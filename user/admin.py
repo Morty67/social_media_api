@@ -6,7 +6,7 @@ from .models import User
 
 
 @admin.register(User)
-class UserAdmin(DjangoUserAdmin):
+class CustomUserAdmin(DjangoUserAdmin):
     """Define admin model for custom User model with no email field."""
 
     fieldsets = (
@@ -24,7 +24,7 @@ class UserAdmin(DjangoUserAdmin):
                 )
             },
         ),
-        (_("Important dates"), {"fields": ("last_login", "date_joined")}),
+        (_("Important dates"), {"fields": ("last_login",)}),
     )
     add_fieldsets = (
         (
