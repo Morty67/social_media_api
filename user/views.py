@@ -1,15 +1,16 @@
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status, permissions
 from rest_framework.exceptions import NotFound
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
 
 from user.serializers import (
     UserSerializer,
-    TokenSerializer,
     PartialUserSerializer,
+    RefreshTokenSerializer,
 )
 
 User = get_user_model()
@@ -28,12 +29,15 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-class TokenLogoutView(APIView):
-    permission_classes = (IsAuthenticated,)
+class LogoutView(GenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = RefreshTokenSerializer
+    permission_classes = (permissions.IsAuthenticated, )
 
-    def post(self, request):
-        serializer = TokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def post(self, request, *args):
+        sz = self.get_serializer(data=request.data)
+        sz.is_valid(raise_exception=True)
+        sz.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

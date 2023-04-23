@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils.text import gettext_lazy as _
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -45,21 +47,6 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-class TokenSerializer(serializers.Serializer):
-    refresh = serializers.CharField()
-
-    def validate(self, attrs):
-        refresh = attrs["refresh"]
-
-        try:
-            token = RefreshToken(refresh)
-            token.blacklist()
-        except Exception:
-            raise serializers.ValidationError("Token is invalid or expired")
-
-        return attrs
-
-
 class PartialUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
@@ -69,3 +56,21 @@ class PartialUserSerializer(serializers.ModelSerializer):
             "bio",
             "avatar",
         )
+
+
+class RefreshTokenSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    default_error_messages = {
+        "bad_token": _("Token is invalid or expired")
+    }
+
+    def validate(self, attrs):
+        self.token = attrs["refresh"]
+        return attrs
+
+    def save(self, **kwargs):
+        try:
+            RefreshToken(self.token).blacklist()
+        except TokenError:
+            self.fail("bad_token")
