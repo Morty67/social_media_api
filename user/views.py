@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status, permissions
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +11,8 @@ from user.serializers import (
     TokenSerializer,
     PartialUserSerializer,
 )
+
+User = get_user_model()
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -36,7 +39,7 @@ class TokenLogoutView(APIView):
 
 class PartialUserUpdateAPIView(generics.UpdateAPIView):
     serializer_class = PartialUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_object(self):
         return self.request.user
@@ -53,7 +56,7 @@ class PartialUserUpdateAPIView(generics.UpdateAPIView):
 
 class UserListAPIView(generics.ListAPIView):
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
         queryset = get_user_model().objects.all()
@@ -64,3 +67,20 @@ class UserListAPIView(generics.ListAPIView):
         if first_name:
             queryset = queryset.filter(first_name__icontains=first_name)
         return queryset
+
+
+class UserProfileDeleteView(generics.DestroyAPIView):
+    serializer_class = UserSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self):
+        try:
+            profile = User.objects.get(id=self.request.user.id)
+            return profile
+        except User.DoesNotExist:
+            raise NotFound("Profile does not exist")
+
+    def delete(self, request, *args, **kwargs):
+        profile = self.get_object()
+        profile.delete()
+        return Response({"detail": "Profile has been deleted."})
