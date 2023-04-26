@@ -23,4 +23,3 @@ python manage.py runserver
 *  User profile retrieval and searching for users by username or other criteria
 *  Follow/unfollow functionality with the ability to view lists of followed and following users
 *  Post creation with text content and optional media attachment
-* 
